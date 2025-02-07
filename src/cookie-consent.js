@@ -369,10 +369,9 @@ class CookieConsentManager {
   }
 }
 
-// Export for both CommonJS and ES modules
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = CookieConsentManager;
-} else {
+// Make sure CookieConsentManager is available globally
+if (typeof window !== 'undefined') {
   window.CookieConsentManager = CookieConsentManager;
 }
+
 export default CookieConsentManager;
