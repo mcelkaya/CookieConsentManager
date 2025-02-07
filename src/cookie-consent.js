@@ -375,3 +375,4 @@ if (typeof module !== 'undefined' && module.exports) {
 } else {
   window.CookieConsentManager = CookieConsentManager;
 }
+export default CookieConsentManager;

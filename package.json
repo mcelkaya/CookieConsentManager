@@ -4,17 +4,17 @@
     "description": "Cross-domain cookie consent manager for Herm.io",
     "main": "dist/cookie-consent.min.js",
     "scripts": {
-        "build": "esbuild src/cookie-consent.js --bundle --minify --outfile=dist/cookie-consent.min.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
+      "build": "node build.js",
+      "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [
-        "cookie",
-        "consent",
-        "gdpr"
+      "cookie",
+      "consent",
+      "gdpr"
     ],
     "author": "",
     "license": "ISC",
     "devDependencies": {
-        "esbuild": "^0.24.2"
+      "esbuild": "^0.19.12"
     }
-}
+  }
