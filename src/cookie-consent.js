@@ -371,22 +371,17 @@ class CookieConsentManager {
 
   initPreferencesButton() {
     const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'cookie-preferences-button-wrapper';
     buttonContainer.innerHTML = `
-      <button id="cookie-preferences-button" 
-              class="fixed bottom-4 left-4 p-3 bg-white rounded-full shadow-lg cursor-pointer hover:bg-gray-100 z-[9998]"
-              aria-label="Cookie Preferences">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2Z"/>
-          <path d="M15.5 7C16.3284 7 17 6.32843 17 5.5C17 4.67157 16.3284 4 15.5 4C14.6716 4 14 4.67157 14 5.5C14 6.32843 14.6716 7 15.5 7Z"/>
-          <path d="M7 13.5C7.82843 13.5 8.5 12.8284 8.5 12C8.5 11.1716 7.82843 10.5 7 10.5C6.17157 10.5 5.5 11.1716 5.5 12C5.5 12.8284 6.17157 13.5 7 13.5Z"/>
-          <path d="M11 17.5C11.8284 17.5 12.5 16.8284 12.5 16C12.5 15.1716 11.8284 14.5 11 14.5C10.1716 14.5 9.5 15.1716 9.5 16C9.5 16.8284 10.1716 17.5 11 17.5Z"/>
-          <path d="M16 11.5C16.8284 11.5 17.5 10.8284 17.5 10C17.5 9.17157 16.8284 8.5 16 8.5C15.1716 8.5 14.5 9.17157 14.5 10C14.5 10.8284 15.1716 11.5 16 11.5Z"/>
-          <path d="M8.5 7C9.32843 7 10 6.32843 10 5.5C10 4.67157 9.32843 4 8.5 4C7.67157 4 7 4.67157 7 5.5C7 6.32843 7.67157 7 8.5 7Z"/>
-        </svg>
+      <button id="cookie-preferences-button" aria-label="Cookie Preferences">
+        <img src="https://cdn.prod.website-files.com/66b910f38e21190c26a4f750/67a9e96a9693f6e9f54a8d81_cookie.png" 
+             alt="Cookie Preferences" 
+             width="24" 
+             height="24">
       </button>
     `;
     document.body.appendChild(buttonContainer);
-
+  
     document.getElementById('cookie-preferences-button')?.addEventListener('click', () => {
       this.showPreferencesModal();
     });
