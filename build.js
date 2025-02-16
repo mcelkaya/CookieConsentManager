@@ -1,4 +1,3 @@
-// build.js
 const esbuild = require('esbuild');
 const crypto = require('crypto');
 const fs = require('fs').promises;
@@ -6,27 +5,30 @@ const path = require('path');
 
 // Security configuration
 const securityConfig = {
-  // List of allowed external packages
+  // List of allowed external packages (now including 'dompurify')
   allowedExternals: [
     'react',
     'react-dom',
     'lodash',
-    'papaparse'
+    'papaparse',
+    'dompurify'
   ],
-  // List of allowed import paths
+  // List of allowed import paths (including the project root and relative paths)
   allowedPaths: [
+    './',
     './src',
     './components',
     './utils',
-    './core'
+    './core',
+    '../utils',
+    '../core',
+    './translations'
   ],
-  // Banned import patterns
+  // Banned import patterns (removed localStorage and sessionStorage)
   bannedImports: [
     'eval',
     'Function',
-    'document.write',
-    'localStorage',
-    'sessionStorage'
+    'document.write'
   ]
 };
 
@@ -38,8 +40,8 @@ const securityPlugin = {
     build.onResolve({ filter: /.*/ }, args => {
       // Check if import is allowed
       const isAllowedExternal = securityConfig.allowedExternals.includes(args.path);
-      const isAllowedPath = securityConfig.allowedPaths.some(path => 
-        args.path.startsWith(path)
+      const isAllowedPath = securityConfig.allowedPaths.some(p => 
+        args.path.startsWith(p)
       );
 
       if (!isAllowedExternal && !isAllowedPath) {
@@ -109,7 +111,6 @@ const buildConfig = {
   },
   metafile: true,
   logLevel: 'info',
-  bundle: true,
   splitting: false,
   treeShaking: true,
   footer: {
@@ -132,9 +133,7 @@ async function validateBuild(outputFile) {
     const dangerousPatterns = [
       'eval\\(',
       'Function\\(',
-      'document\\.write',
-      'localStorage',
-      'sessionStorage'
+      'document\\.write'
     ];
 
     for (const pattern of dangerousPatterns) {

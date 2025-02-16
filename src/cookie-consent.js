@@ -1,11 +1,10 @@
-import { Modal } from './components/Modal';
-import { Tabs } from './components/Tabs';
+import Modal from './components/Modal';
+import Tabs from './components/Tabs';
 import { CookieManager } from './core/CookieManager';
 import { StorageManager } from './core/StorageManager';
 import { LanguageManager } from './core/LanguageManager';
-import { PreferencesButton } from './components/PreferencesButton';
+import PreferencesButton from './components/PreferencesButton';
 import { translations } from './translations';
-import { createElement } from './utils/dom';
 
 class CookieConsentManager {
   constructor(options = {}) {
@@ -48,7 +47,7 @@ class CookieConsentManager {
 
   initUI() {
     // Append modal to body
-    document.body.appendChild(createElement(this.modal.render()));
+    document.body.appendChild(this.modal.render());
     
     // Initialize preferences button
     this.preferencesButton.init();
@@ -115,7 +114,6 @@ class CookieConsentManager {
         this.cookieManager.deleteCookie(cookie);
       });
     }
-
     if (!preferences.marketing) {
       this.marketingCookies.forEach(cookie => {
         this.cookieManager.deleteCookie(cookie);
