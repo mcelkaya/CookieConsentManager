@@ -167,6 +167,32 @@ export default class Modal {
     `;
   }
 
+  renderCookieSections(t) {
+    return COOKIE_TYPES.map(({ id, isRequired }) => {
+      const cookieType = t.cookieTypes[id] || { title: id, description: '' };
+      return `
+        <div class="cookie-section rounded-lg border border-gray-200 p-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-medium">${sanitizeHTML(cookieType.title)}</h3>
+            <label class="switch inline-block">
+              <input
+                type="checkbox"
+                id="${id}-consent-details"
+                data-category="${id}"
+                ${isRequired ? 'checked disabled' : ''}
+                class="hidden"
+              />
+              <div class="toggle-slider">
+                <div class="toggle-knob"></div>
+              </div>
+            </label>
+          </div>
+          <p class="text-gray-600 mt-2">${sanitizeHTML(cookieType.description)}</p>
+        </div>
+      `;
+    }).join('');
+  }
+
   renderAboutTab(t) {
     const about = t.about || {};
     return `
@@ -181,15 +207,18 @@ export default class Modal {
               ${sanitizeHTML(about.cookieDeclaration || '')}
             </a>
           </p>
+          <p class="text-gray-600">
+            ${sanitizeHTML((about.privacy && about.privacy.text) || '')}
+            <a href="#" class="text-blue-600 hover:underline">
+              ${sanitizeHTML((about.privacy && about.privacy.link) || '')}
+            </a>
+          </p>
         </div>
       </div>
     `;
   }
 
   handleTabClick(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    
     const button = event.target.closest('.tab-button');
     if (!button) return;
     
@@ -200,8 +229,6 @@ export default class Modal {
   }
 
   handleToggleChange(event) {
-    event.stopPropagation();
-    
     const category = event.target.dataset.category;
     if (!category) return;
 
@@ -238,56 +265,14 @@ export default class Modal {
     });
   }
 
-  addEventListeners() {
-    const modal = safeQuerySelector('#cookie-consent-modal');
-    if (!modal) return;
-
-    // Event delegation for all interactions
-    modal.addEventListener('click', (event) => {
-      // Handle tab clicks
-      const tabButton = event.target.closest('.tab-button');
-      if (tabButton) {
-        this.handleTabClick(event);
-        return;
-      }
-
-      // Handle toggle changes
-      const toggle = event.target.closest('input[type="checkbox"][data-category]');
-      if (toggle) {
-        this.handleToggleChange(event);
-        return;
-      }
-
-      // Handle action buttons
-      const actionButton = event.target.closest('[data-action]');
-      if (actionButton) {
-        event.preventDefault();
-        event.stopPropagation();
-        const action = actionButton.dataset.action;
-        if (action === 'deny') this.onDeny();
-        if (action === 'save') this.onSave();
-        if (action === 'accept') this.onAccept();
-      }
-    }, true);
-
-    document.addEventListener('keydown', this.handleKeyDown);
-    document.addEventListener('click', this.handleOutsideClick);
-  }
-
   show() {
     const modal = safeQuerySelector('#cookie-consent-modal');
     if (!modal) return;
   
-    // Force proper display and centering
-    modal.style.display = 'flex';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
     modal.classList.remove('hidden');
-    
     this.isOpen = true;
     this.addEventListeners();
     this.trapFocus();
-    
     document.body.style.overflow = 'hidden';
   }
 
@@ -299,6 +284,38 @@ export default class Modal {
     this.isOpen = false;
     this.removeEventListeners();
     document.body.style.overflow = '';
+  }
+
+  addEventListeners() {
+    const modal = safeQuerySelector('#cookie-consent-modal');
+    if (!modal) return;
+
+    modal.querySelectorAll('.tab-button').forEach(button => {
+      addEventListeners(button, { click: this.handleTabClick });
+    });
+
+    modal.querySelectorAll('input[type="checkbox"][data-category]').forEach(toggle => {
+      addEventListeners(toggle, { change: this.handleToggleChange });
+    });
+
+    modal.querySelectorAll('[data-action]').forEach(button => {
+      addEventListeners(button, {
+        click: (e) => {
+          const action = e.target.dataset.action;
+          if (action === 'deny') this.onDeny();
+          if (action === 'save') this.onSave();
+          if (action === 'accept') this.onAccept();
+        }
+      });
+    });
+
+    document.addEventListener('keydown', this.handleKeyDown);
+    document.addEventListener('click', this.handleOutsideClick);
+  }
+
+  removeEventListeners() {
+    document.removeEventListener('keydown', this.handleKeyDown);
+    document.removeEventListener('click', this.handleOutsideClick);
   }
 
   handleKeyDown(event) {
