@@ -2,6 +2,8 @@
 import { sanitizeHTML, safeQuerySelector, setSafeAttribute, toggleClass } from '../utils/dom';
 import { validateData } from '../utils/security';
 
+const DEBUG = true;
+
 const VALID_TABS = {
   consent: 'consent',
   details: 'details',
@@ -17,6 +19,8 @@ const COOKIE_TYPES = [
 
 export default class Modal {
   constructor(options = {}) {
+    if (DEBUG) console.log('Modal constructor called with options:', options);
+
     const optionsSchema = {
       translations: { type: 'object', required: true },
       language: { type: 'string', required: true, pattern: /^[a-z]{2}$/i },
@@ -26,6 +30,7 @@ export default class Modal {
     };
 
     if (!validateData(options, optionsSchema)) {
+      console.error('Invalid Modal configuration');
       throw new Error('Invalid Modal configuration');
     }
 
@@ -41,11 +46,17 @@ export default class Modal {
     this.handleModalChange = this.handleModalChange.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleOutsideClick = this.handleOutsideClick.bind(this);
+
+    if (DEBUG) console.log('Modal instance created successfully');
   }
 
   render() {
+    if (DEBUG) console.log('Modal.render() called');
     const t = this.getTranslations();
-    if (!t) return '';
+    if (!t) {
+      console.error('No translations found');
+      return '';
+    }
 
     const modal = document.createElement('div');
     modal.id = 'cookie-consent-modal';
@@ -57,14 +68,28 @@ export default class Modal {
     const modalContent = document.createElement('div');
     modalContent.className = 'relative bg-white rounded-lg w-full max-w-2xl mx-4';
 
-    modalContent.innerHTML = sanitizeHTML(
-      this.renderTabNavigation(t) +
+    const content = this.renderTabNavigation(t) +
       this.renderConsentTab(t) +
       this.renderDetailsTab(t) +
-      this.renderAboutTab(t)
-    );
+      this.renderAboutTab(t);
 
+    if (DEBUG) {
+      console.log('Rendered content length:', content.length);
+      console.log('Tab navigation present:', content.includes('tab-button'));
+      console.log('Action buttons present:', content.includes('data-action'));
+    }
+
+    modalContent.innerHTML = sanitizeHTML(content);
     modal.appendChild(modalContent);
+
+    if (DEBUG) {
+      console.log('Final modal structure:', {
+        id: modal.id,
+        classes: modal.className,
+        content: modalContent.children.length
+      });
+    }
+
     return modal;
   }
 
@@ -218,9 +243,19 @@ export default class Modal {
   }
 
   handleModalClick(e) {
+    if (DEBUG) {
+      console.log('Modal click detected:', {
+        target: e.target,
+        targetClasses: e.target.className,
+        closestTabButton: e.target.closest('.tab-button')?.dataset?.tab,
+        closestActionButton: e.target.closest('[data-action]')?.dataset?.action
+      });
+    }
+
     // Handle tab buttons
     const tabButton = e.target.closest('.tab-button');
     if (tabButton) {
+      if (DEBUG) console.log('Tab button clicked:', tabButton.dataset.tab);
       const tabId = tabButton.dataset.tab;
       if (Object.values(VALID_TABS).includes(tabId)) {
         this.switchToTab(tabId);
@@ -231,6 +266,7 @@ export default class Modal {
     // Handle action buttons
     const actionButton = e.target.closest('[data-action]');
     if (actionButton) {
+      if (DEBUG) console.log('Action button clicked:', actionButton.dataset.action);
       const action = actionButton.dataset.action;
       if (action === 'deny') this.onDeny();
       if (action === 'save') this.onSave();
@@ -239,6 +275,7 @@ export default class Modal {
   }
 
   handleModalChange(e) {
+    if (DEBUG) console.log('Modal change event:', e);
     if (e.target.matches('input[type="checkbox"][data-category]')) {
       const category = e.target.dataset.category;
       if (!category) return;
@@ -255,10 +292,17 @@ export default class Modal {
   }
 
   switchToTab(tabId) {
-    if (!Object.values(VALID_TABS).includes(tabId)) return;
+    if (DEBUG) console.log('Switching to tab:', tabId);
+    if (!Object.values(VALID_TABS).includes(tabId)) {
+      console.warn('Invalid tab ID:', tabId);
+      return;
+    }
 
-    const modal = safeQuerySelector('#cookie-consent-modal');
-    if (!modal) return;
+    const modal = document.querySelector('#cookie-consent-modal');
+    if (!modal) {
+      console.error('Modal element not found in switchToTab');
+      return;
+    }
 
     // Update tab buttons
     modal.querySelectorAll('.tab-button').forEach(button => {
@@ -269,38 +313,79 @@ export default class Modal {
       toggleClass(button, 'border-blue-600', isActive);
       toggleClass(button, 'text-gray-600', !isActive);
       setSafeAttribute(button, 'aria-selected', String(isActive));
+      
+      if (DEBUG) {
+        console.log('Updated tab button:', {
+          tab: button.dataset.tab,
+          isActive,
+          classes: button.className
+        });
+      }
     });
 
     // Update content visibility
     modal.querySelectorAll('.tab-content').forEach(content => {
-      toggleClass(content, 'hidden', !content.id.startsWith(tabId));
+      const isVisible = content.id.startsWith(tabId);
+      toggleClass(content, 'hidden', !isVisible);
+      if (DEBUG) {
+        console.log('Updated content visibility:', {
+          id: content.id,
+          isVisible,
+          classes: content.className
+        });
+      }
     });
   }
 
   show() {
-    const modal = safeQuerySelector('#cookie-consent-modal');
-    if (!modal) return;
+    if (DEBUG) console.log('Modal.show() called');
+    const modal = document.querySelector('#cookie-consent-modal');
+    if (!modal) {
+      console.error('Modal element not found in show()');
+      return;
+    }
   
+    if (DEBUG) console.log('Found modal element, removing hidden class');
     modal.classList.remove('hidden');
     this.isOpen = true;
+    if (DEBUG) console.log('Adding event listeners');
     this.addEventListeners();
     this.trapFocus();
     document.body.style.overflow = 'hidden';
+    if (DEBUG) console.log('Modal should now be visible');
   }
 
   hide() {
-    const modal = safeQuerySelector('#cookie-consent-modal');
-    if (!modal) return;
+    if (DEBUG) console.log('Modal.hide() called');
+    const modal = document.querySelector('#cookie-consent-modal');
+    if (!modal) {
+      console.error('Modal element not found in hide()');
+      return;
+    }
   
     modal.classList.add('hidden');
     this.isOpen = false;
     this.removeEventListeners();
     document.body.style.overflow = '';
+    if (DEBUG) console.log('Modal hidden');
   }
 
   addEventListeners() {
-    const modal = safeQuerySelector('#cookie-consent-modal');
-    if (!modal) return;
+    if (DEBUG) console.log('Adding event listeners to modal');
+    const modal = document.querySelector('#cookie-consent-modal');
+    if (!modal) {
+      console.error('Modal element not found in addEventListeners()');
+      return;
+    }
+
+    if (DEBUG) {
+      console.log('Current modal element:', {
+        id: modal.id,
+        classes: modal.className,
+        tabButtons: modal.querySelectorAll('.tab-button').length,
+        actionButtons: modal.querySelectorAll('[data-action]').length
+      });
+    }
 
     // Use event delegation for clicks and changes
     modal.addEventListener('click', this.handleModalClick);
@@ -309,10 +394,13 @@ export default class Modal {
     // Global listeners
     document.addEventListener('keydown', this.handleKeyDown);
     document.addEventListener('click', this.handleOutsideClick);
+
+    if (DEBUG) console.log('Event listeners added');
   }
 
   removeEventListeners() {
-    const modal = safeQuerySelector('#cookie-consent-modal');
+    if (DEBUG) console.log('Removing event listeners');
+    const modal = document.querySelector('#cookie-consent-modal');
     if (modal) {
       modal.removeEventListener('click', this.handleModalClick);
       modal.removeEventListener('change', this.handleModalChange);
@@ -323,19 +411,21 @@ export default class Modal {
 
   handleKeyDown(event) {
     if (event.key === 'Escape' && this.isOpen) {
+      if (DEBUG) console.log('Escape key pressed, hiding modal');
       this.hide();
     }
   }
 
   handleOutsideClick(event) {
-    const modal = safeQuerySelector('#cookie-consent-modal');
+    const modal = document.querySelector('#cookie-consent-modal');
     if (modal && !modal.contains(event.target) && this.isOpen) {
+      if (DEBUG) console.log('Outside click detected, hiding modal');
       this.hide();
     }
   }
 
   trapFocus() {
-    const modal = safeQuerySelector('#cookie-consent-modal');
+    const modal = document.querySelector('#cookie-consent-modal');
     if (!modal) return;
 
     const focusableElements = modal.querySelectorAll(
