@@ -19,6 +19,7 @@ dist/
 *.swp
 *.swo
 *~
+ProjectStructure.ini
 
 # OS generated files
 .DS_Store
