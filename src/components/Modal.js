@@ -1,5 +1,4 @@
 /* eslint-disable security/detect-object-injection */
-import { addEventListeners } from '../utils/events';
 import { sanitizeHTML, safeQuerySelector, setSafeAttribute, toggleClass } from '../utils/dom';
 import { validateData } from '../utils/security';
 
@@ -36,10 +35,10 @@ export default class Modal {
     this.onDeny = options.onDeny;
     this.onAccept = options.onAccept;
     this.isOpen = false;
-    
-    // Bind methods
-    this.handleTabClick = this.handleTabClick.bind(this);
-    this.handleToggleChange = this.handleToggleChange.bind(this);
+
+    // Bind methods to preserve context
+    this.handleModalClick = this.handleModalClick.bind(this);
+    this.handleModalChange = this.handleModalChange.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleOutsideClick = this.handleOutsideClick.bind(this);
   }
@@ -71,7 +70,7 @@ export default class Modal {
 
   renderTabNavigation(t) {
     return `
-      <div class="flex border-b">
+      <div class="flex border-b" role="tablist">
         ${Object.entries(VALID_TABS).map(([key, value]) => {
           const isActive = key === 'consent';
           return `
@@ -218,27 +217,40 @@ export default class Modal {
     `;
   }
 
-  handleTabClick(event) {
-    const button = event.target.closest('.tab-button');
-    if (!button) return;
-    
-    const tabId = button.dataset.tab;
-    if (Object.values(VALID_TABS).includes(tabId)) {
-      this.switchToTab(tabId);
+  handleModalClick(e) {
+    // Handle tab buttons
+    const tabButton = e.target.closest('.tab-button');
+    if (tabButton) {
+      const tabId = tabButton.dataset.tab;
+      if (Object.values(VALID_TABS).includes(tabId)) {
+        this.switchToTab(tabId);
+      }
+      return;
+    }
+
+    // Handle action buttons
+    const actionButton = e.target.closest('[data-action]');
+    if (actionButton) {
+      const action = actionButton.dataset.action;
+      if (action === 'deny') this.onDeny();
+      if (action === 'save') this.onSave();
+      if (action === 'accept') this.onAccept();
     }
   }
 
-  handleToggleChange(event) {
-    const category = event.target.dataset.category;
-    if (!category) return;
+  handleModalChange(e) {
+    if (e.target.matches('input[type="checkbox"][data-category]')) {
+      const category = e.target.dataset.category;
+      if (!category) return;
 
-    const mainToggle = document.getElementById(`${category}-consent`);
-    const detailsToggle = document.getElementById(`${category}-consent-details`);
-    
-    if (mainToggle && detailsToggle) {
-      const isChecked = event.target.checked;
-      mainToggle.checked = isChecked;
-      detailsToggle.checked = isChecked;
+      const mainToggle = document.getElementById(`${category}-consent`);
+      const detailsToggle = document.getElementById(`${category}-consent-details`);
+      
+      if (mainToggle && detailsToggle) {
+        const isChecked = e.target.checked;
+        mainToggle.checked = isChecked;
+        detailsToggle.checked = isChecked;
+      }
     }
   }
 
@@ -290,30 +302,21 @@ export default class Modal {
     const modal = safeQuerySelector('#cookie-consent-modal');
     if (!modal) return;
 
-    modal.querySelectorAll('.tab-button').forEach(button => {
-      addEventListeners(button, { click: this.handleTabClick });
-    });
+    // Use event delegation for clicks and changes
+    modal.addEventListener('click', this.handleModalClick);
+    modal.addEventListener('change', this.handleModalChange);
 
-    modal.querySelectorAll('input[type="checkbox"][data-category]').forEach(toggle => {
-      addEventListeners(toggle, { change: this.handleToggleChange });
-    });
-
-    modal.querySelectorAll('[data-action]').forEach(button => {
-      addEventListeners(button, {
-        click: (e) => {
-          const action = e.target.dataset.action;
-          if (action === 'deny') this.onDeny();
-          if (action === 'save') this.onSave();
-          if (action === 'accept') this.onAccept();
-        }
-      });
-    });
-
+    // Global listeners
     document.addEventListener('keydown', this.handleKeyDown);
     document.addEventListener('click', this.handleOutsideClick);
   }
 
   removeEventListeners() {
+    const modal = safeQuerySelector('#cookie-consent-modal');
+    if (modal) {
+      modal.removeEventListener('click', this.handleModalClick);
+      modal.removeEventListener('change', this.handleModalChange);
+    }
     document.removeEventListener('keydown', this.handleKeyDown);
     document.removeEventListener('click', this.handleOutsideClick);
   }
