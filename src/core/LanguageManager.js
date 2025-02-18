@@ -38,18 +38,20 @@ export class LanguageManager {
   }
 
   validateTranslationStructure(translation) {
-    const validated = {};
+    // Start with a shallow copy to preserve non-required keys.
+    const validated = { ...translation };
+    // For each required section, override with a sanitized version.
     Object.keys(REQUIRED_TRANSLATION_KEYS).forEach(section => {
-      if (Object.prototype.hasOwnProperty.call(translation, section)) {
-        const requiredKeys = REQUIRED_TRANSLATION_KEYS[section];
-        validated[section] = {};
-        requiredKeys.forEach(key => {
-          if (translation[section] && Object.prototype.hasOwnProperty.call(translation[section], key)) {
-            // eslint-disable-next-line xss/no-mixed-html
-            validated[section][key] = this.sanitizeTranslationValue(translation[section][key]);
-          }
-        });
-      }
+      validated[section] = {};
+      const requiredKeys = REQUIRED_TRANSLATION_KEYS[section];
+      requiredKeys.forEach(key => {
+        if (translation[section] && Object.prototype.hasOwnProperty.call(translation[section], key)) {
+          validated[section][key] = this.sanitizeTranslationValue(translation[section][key]);
+        } else {
+          console.warn(`Missing translation key for section '${section}': '${key}'`);
+          validated[section][key] = '';
+        }
+      });
     });
     return Object.freeze(validated);
   }
@@ -60,7 +62,9 @@ export class LanguageManager {
       if (navigator && navigator.language) {
         browserLang = navigator.language.split('-')[0].toLowerCase();
       }
-      return Object.prototype.hasOwnProperty.call(SUPPORTED_LANGUAGES, browserLang) ? browserLang : this.defaultLanguage;
+      return Object.prototype.hasOwnProperty.call(SUPPORTED_LANGUAGES, browserLang)
+        ? browserLang
+        : this.defaultLanguage;
     } catch (error) {
       console.error('Failed to detect language:', error);
       return this.defaultLanguage;
@@ -70,9 +74,12 @@ export class LanguageManager {
   getTranslation(language, key) {
     try {
       if (!key || typeof key !== 'string') return '';
-      const validLanguage = Object.prototype.hasOwnProperty.call(SUPPORTED_LANGUAGES, language) ? language : this.defaultLanguage;
-      const translationObj = (this.translations && this.translations[validLanguage]) ||
-                             (this.translations && this.translations[this.defaultLanguage]);
+      const validLanguage = Object.prototype.hasOwnProperty.call(SUPPORTED_LANGUAGES, language)
+        ? language
+        : this.defaultLanguage;
+      const translationObj =
+        (this.translations && this.translations[validLanguage]) ||
+        (this.translations && this.translations[this.defaultLanguage]);
       return this.getNestedValue(translationObj, key.split('.')) || key;
     } catch (error) {
       console.error(`Failed to get translation for key: ${key}`, error);
