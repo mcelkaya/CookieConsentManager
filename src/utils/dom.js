@@ -7,12 +7,12 @@ const SANITIZE_CONFIG = Object.freeze({
   ],
   ALLOWED_ATTR: [
     'class', 'id', 'type', 'checked', 'disabled', 
-    'data-tab', 'data-category', 'data-action', // <-- Added data-action
+    'data-tab', 'data-category', 'data-action', // data-action is explicitly allowed
     'aria-label', 'src', 'alt', 'href',
     'role', 'aria-selected', 'aria-controls', 'tabindex',
     'aria-expanded', 'aria-hidden'
   ],
-  ALLOW_DATA_ATTR: false,
+  ALLOW_DATA_ATTR: true, // <-- Changed from false to true
   RETURN_DOM: false,
   USE_PROFILES: { html: true },
   SANITIZE_DOM: true,
