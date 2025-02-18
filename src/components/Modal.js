@@ -188,10 +188,10 @@ export default class Modal {
       });
     }
 
+    // Do not immediately stop propagation here so that the event flows correctly.
     event.preventDefault();
-    event.stopPropagation();
 
-    // Handle tab buttons
+    // Handle tab buttons first
     const tabButton = event.target.closest('.tab-button');
     if (tabButton) {
       const tabId = tabButton.getAttribute('data-tab');
@@ -208,7 +208,7 @@ export default class Modal {
       const action = actionButton.getAttribute('data-action');
       if (DEBUG) console.log('Action button clicked:', action);
 
-      switch(action) {
+      switch (action) {
         case 'deny':
           this.onDeny();
           break;
@@ -264,25 +264,16 @@ export default class Modal {
       return;
     }
 
-    // Remove existing listeners first
+    // Remove any previously attached listeners
     this.removeEventListeners();
 
-    // Add event listeners
-    modal.addEventListener('click', this._handleClick, true);
-    modal.addEventListener('change', this._handleChange, true);
+    // Attach event listeners in the bubbling phase
+    modal.addEventListener('click', this._handleClick, false);
+    modal.addEventListener('change', this._handleChange, false);
     document.addEventListener('keydown', this._handleKeyDown);
     document.addEventListener('click', this._handleOutsideClick);
 
-    // Add direct button listeners
-    modal.querySelectorAll('button[data-action], button.tab-button').forEach(button => {
-      button.addEventListener('click', this._handleClick);
-      if (DEBUG) {
-        console.log('Added click listener to button:', {
-          action: button.getAttribute('data-action'),
-          tab: button.getAttribute('data-tab')
-        });
-      }
-    });
+    // No need to add separate listeners to each button since bubbling will handle them
 
     modal.classList.remove('hidden');
     this.isOpen = true;
@@ -307,15 +298,10 @@ export default class Modal {
     const modal = document.getElementById('cookie-consent-modal');
     if (!modal) return;
 
-    modal.removeEventListener('click', this._handleClick, true);
-    modal.removeEventListener('change', this._handleChange, true);
+    modal.removeEventListener('click', this._handleClick, false);
+    modal.removeEventListener('change', this._handleChange, false);
     document.removeEventListener('keydown', this._handleKeyDown);
     document.removeEventListener('click', this._handleOutsideClick);
-
-    // Remove direct button listeners
-    modal.querySelectorAll('button[data-action], button.tab-button').forEach(button => {
-      button.removeEventListener('click', this._handleClick);
-    });
   }
 
   switchToTab(tabId) {
