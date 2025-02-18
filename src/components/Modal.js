@@ -187,11 +187,9 @@ export default class Modal {
         parentTab: event.target.closest('.tab-button')?.getAttribute('data-tab')
       });
     }
-
-    // Do not immediately stop propagation here so that the event flows correctly.
     event.preventDefault();
 
-    // Handle tab buttons first
+    // Handle tab button clicks
     const tabButton = event.target.closest('.tab-button');
     if (tabButton) {
       const tabId = tabButton.getAttribute('data-tab');
@@ -199,15 +197,16 @@ export default class Modal {
       if (VALID_TABS[tabId]) {
         this.switchToTab(tabId);
       }
+      event.stopPropagation();
       return;
     }
 
-    // Handle action buttons
+    // Handle action button clicks
     const actionButton = event.target.closest('[data-action]');
     if (actionButton) {
       const action = actionButton.getAttribute('data-action');
       if (DEBUG) console.log('Action button clicked:', action);
-
+      event.stopPropagation();
       switch (action) {
         case 'deny':
           this.onDeny();
@@ -272,8 +271,6 @@ export default class Modal {
     modal.addEventListener('change', this._handleChange, false);
     document.addEventListener('keydown', this._handleKeyDown);
     document.addEventListener('click', this._handleOutsideClick);
-
-    // No need to add separate listeners to each button since bubbling will handle them
 
     modal.classList.remove('hidden');
     this.isOpen = true;
