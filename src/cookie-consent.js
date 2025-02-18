@@ -1,10 +1,10 @@
 import Modal from './components/modal/index.js';
-import Tabs from './components/Tabs';
-import { CookieManager } from './core/CookieManager';
-import { StorageManager } from './core/StorageManager';
-import { LanguageManager } from './core/LanguageManager';
-import PreferencesButton from './components/PreferencesButton';
-import { translations } from './translations';
+import Tabs from './components/Tabs.js';
+import { CookieManager } from './core/CookieManager.js';
+import { StorageManager } from './core/StorageManager.js';
+import { LanguageManager } from './core/LanguageManager.js';
+import PreferencesButton from './components/PreferencesButton.js';
+import { translations } from './translations.js';
 
 const DEBUG = true;
 
