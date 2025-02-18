@@ -1,4 +1,4 @@
-import Modal from './components/Modal';
+import Modal from './components/modal/index.js';
 import Tabs from './components/Tabs';
 import { CookieManager } from './core/CookieManager';
 import { StorageManager } from './core/StorageManager';
