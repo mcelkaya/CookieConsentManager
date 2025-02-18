@@ -7,7 +7,8 @@ const SANITIZE_CONFIG = Object.freeze({
   ],
   ALLOWED_ATTR: [
     'class', 'id', 'type', 'checked', 'disabled', 
-    'data-tab', 'data-category', 'aria-label', 'src', 'alt', 'href',
+    'data-tab', 'data-category', 'data-action', // <-- Added data-action
+    'aria-label', 'src', 'alt', 'href',
     'role', 'aria-selected', 'aria-controls', 'tabindex',
     'aria-expanded', 'aria-hidden'
   ],
