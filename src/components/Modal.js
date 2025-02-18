@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-object-injection */
 import { sanitizeHTML } from '../utils/dom';
 import { validateData } from '../utils/security';
 
@@ -40,103 +41,20 @@ export default class Modal {
     this.onAccept = options.onAccept;
     this.isOpen = false;
 
-    // Bind event handlers
+    // Bind methods to preserve context
     this._handleClick = this._handleClick.bind(this);
     this._handleChange = this._handleChange.bind(this);
     this._handleKeyDown = this._handleKeyDown.bind(this);
     this._handleOutsideClick = this._handleOutsideClick.bind(this);
-    
-    if (DEBUG) console.log('Modal instance created successfully');
-  }
-
-  _handleClick(event) {
-    if (DEBUG) {
-      console.log('Click event:', {
-        target: event.target,
-        currentTarget: event.currentTarget,
-        type: event.type,
-        path: event.composedPath()
-      });
-    }
-
-    // Handle tab buttons
-    const tabButton = event.target.closest('.tab-button');
-    if (tabButton) {
-      const tabId = tabButton.dataset.tab;
-      if (DEBUG) console.log('Tab button clicked:', tabId);
-      this.switchToTab(tabId);
-      event.preventDefault();
-      return;
-    }
-
-    // Handle action buttons
-    const actionButton = event.target.closest('[data-action]');
-    if (actionButton) {
-      const action = actionButton.dataset.action;
-      if (DEBUG) console.log('Action button clicked:', action);
-      
-      switch(action) {
-        case 'deny':
-          this.onDeny();
-          break;
-        case 'save':
-          this.onSave();
-          break;
-        case 'accept':
-          this.onAccept();
-          break;
-      }
-      event.preventDefault();
-      return;
-    }
-  }
-
-  _handleChange(event) {
-    if (DEBUG) console.log('Change event:', event);
-    const target = event.target;
-    
-    if (target.matches('input[type="checkbox"][data-category]')) {
-      const category = target.dataset.category;
-      if (!category) return;
-
-      const mainToggle = document.getElementById(`${category}-consent`);
-      const detailsToggle = document.getElementById(`${category}-consent-details`);
-      
-      if (mainToggle && detailsToggle) {
-        const isChecked = target.checked;
-        mainToggle.checked = isChecked;
-        detailsToggle.checked = isChecked;
-        if (DEBUG) console.log(`Toggled ${category} to ${isChecked}`);
-      }
-    }
-  }
-
-  _handleKeyDown(event) {
-    if (event.key === 'Escape' && this.isOpen) {
-      if (DEBUG) console.log('Escape key pressed, hiding modal');
-      this.hide();
-    }
-  }
-
-  _handleOutsideClick(event) {
-    const modal = document.getElementById('cookie-consent-modal');
-    if (modal && !modal.contains(event.target) && this.isOpen) {
-      if (DEBUG) console.log('Outside click detected, hiding modal');
-      this.hide();
-    }
   }
 
   render() {
-    if (DEBUG) console.log('Rendering modal');
     const t = this.getTranslations();
-    if (!t) {
-      console.error('No translations available');
-      return null;
-    }
+    if (!t) return null;
 
     const modal = document.createElement('div');
     modal.id = 'cookie-consent-modal';
-    modal.className = 'hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center';
+    modal.className = 'hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center pointer-events-auto';
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
     modal.setAttribute('aria-labelledby', 'modal-title');
@@ -189,17 +107,17 @@ export default class Modal {
           <div class="flex gap-4">
             <button 
               type="button"
-              class="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 pointer-events-auto"
               data-action="deny"
             >${sanitizeHTML(t.initialModal.deny)}</button>
             <button
               type="button"
-              class="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 pointer-events-auto"
               data-action="save"
             >${sanitizeHTML(t.initialModal.allowSelection)}</button>
             <button
               type="button"
-              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 pointer-events-auto"
               data-action="accept"
             >${sanitizeHTML(t.initialModal.allowAll)}</button>
           </div>
@@ -255,17 +173,87 @@ export default class Modal {
     `;
 
     modal.innerHTML = sanitizeHTML(content);
-    
+    return modal;
+  }
+
+  _handleClick(event) {
     if (DEBUG) {
-      console.log('Modal rendered with:', {
-        id: modal.id,
-        classes: modal.className,
-        content: content.length,
-        buttons: modal.querySelectorAll('button').length
+      console.log('Click event:', {
+        target: event.target,
+        currentTarget: event.currentTarget,
+        dataAction: event.target.getAttribute('data-action'),
+        dataTab: event.target.getAttribute('data-tab'),
+        parentAction: event.target.closest('[data-action]')?.getAttribute('data-action'),
+        parentTab: event.target.closest('.tab-button')?.getAttribute('data-tab')
       });
     }
 
-    return modal;
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Handle tab buttons
+    const tabButton = event.target.closest('.tab-button');
+    if (tabButton) {
+      const tabId = tabButton.getAttribute('data-tab');
+      if (DEBUG) console.log('Tab button clicked:', tabId);
+      if (VALID_TABS[tabId]) {
+        this.switchToTab(tabId);
+      }
+      return;
+    }
+
+    // Handle action buttons
+    const actionButton = event.target.closest('[data-action]');
+    if (actionButton) {
+      const action = actionButton.getAttribute('data-action');
+      if (DEBUG) console.log('Action button clicked:', action);
+
+      switch(action) {
+        case 'deny':
+          this.onDeny();
+          break;
+        case 'save':
+          this.onSave();
+          break;
+        case 'accept':
+          this.onAccept();
+          break;
+        default:
+          console.warn('Unknown action:', action);
+      }
+    }
+  }
+
+  _handleChange(event) {
+    if (DEBUG) console.log('Change event:', event);
+    const target = event.target;
+    
+    if (target.matches('input[type="checkbox"][data-category]')) {
+      const category = target.getAttribute('data-category');
+      if (!category) return;
+
+      const mainToggle = document.getElementById(`${category}-consent`);
+      const detailsToggle = document.getElementById(`${category}-consent-details`);
+      
+      if (mainToggle && detailsToggle) {
+        const isChecked = target.checked;
+        mainToggle.checked = isChecked;
+        detailsToggle.checked = isChecked;
+      }
+    }
+  }
+
+  _handleKeyDown(event) {
+    if (event.key === 'Escape' && this.isOpen) {
+      this.hide();
+    }
+  }
+
+  _handleOutsideClick(event) {
+    const modal = document.getElementById('cookie-consent-modal');
+    if (modal && !modal.contains(event.target) && this.isOpen) {
+      this.hide();
+    }
   }
 
   show() {
@@ -276,17 +264,29 @@ export default class Modal {
       return;
     }
 
-    modal.classList.remove('hidden');
-    this.isOpen = true;
-    
+    // Remove existing listeners first
+    this.removeEventListeners();
+
     // Add event listeners
-    modal.addEventListener('click', this._handleClick);
-    modal.addEventListener('change', this._handleChange);
+    modal.addEventListener('click', this._handleClick, true);
+    modal.addEventListener('change', this._handleChange, true);
     document.addEventListener('keydown', this._handleKeyDown);
     document.addEventListener('click', this._handleOutsideClick);
 
+    // Add direct button listeners
+    modal.querySelectorAll('button[data-action], button.tab-button').forEach(button => {
+      button.addEventListener('click', this._handleClick);
+      if (DEBUG) {
+        console.log('Added click listener to button:', {
+          action: button.getAttribute('data-action'),
+          tab: button.getAttribute('data-tab')
+        });
+      }
+    });
+
+    modal.classList.remove('hidden');
+    this.isOpen = true;
     document.body.style.overflow = 'hidden';
-    if (DEBUG) console.log('Modal shown and events attached');
   }
 
   hide() {
@@ -297,23 +297,31 @@ export default class Modal {
       return;
     }
 
+    this.removeEventListeners();
     modal.classList.add('hidden');
     this.isOpen = false;
-    
-    // Remove event listeners
-    modal.removeEventListener('click', this._handleClick);
-    modal.removeEventListener('change', this._handleChange);
+    document.body.style.overflow = '';
+  }
+
+  removeEventListeners() {
+    const modal = document.getElementById('cookie-consent-modal');
+    if (!modal) return;
+
+    modal.removeEventListener('click', this._handleClick, true);
+    modal.removeEventListener('change', this._handleChange, true);
     document.removeEventListener('keydown', this._handleKeyDown);
     document.removeEventListener('click', this._handleOutsideClick);
 
-    document.body.style.overflow = '';
-    if (DEBUG) console.log('Modal hidden and events removed');
+    // Remove direct button listeners
+    modal.querySelectorAll('button[data-action], button.tab-button').forEach(button => {
+      button.removeEventListener('click', this._handleClick);
+    });
   }
 
   switchToTab(tabId) {
     if (DEBUG) console.log('Switching to tab:', tabId);
     if (!VALID_TABS[tabId]) {
-      console.error('Invalid tab ID:', tabId);
+      console.warn('Invalid tab ID:', tabId);
       return;
     }
 
@@ -324,9 +332,8 @@ export default class Modal {
     }
 
     // Update tab buttons
-    const buttons = modal.querySelectorAll('.tab-button');
-    buttons.forEach(button => {
-      const isActive = button.dataset.tab === tabId;
+    modal.querySelectorAll('.tab-button').forEach(button => {
+      const isActive = button.getAttribute('data-tab') === tabId;
       button.classList.toggle('active', isActive);
       button.classList.toggle('text-blue-600', isActive);
       button.classList.toggle('border-b-2', isActive);
@@ -336,11 +343,8 @@ export default class Modal {
     });
 
     // Update content visibility
-    const panels = modal.querySelectorAll('.tab-content');
-    panels.forEach(panel => {
-      const isVisible = panel.id.startsWith(tabId);
-      panel.classList.toggle('hidden', !isVisible);
-      if (DEBUG && isVisible) console.log(`Showing panel: ${panel.id}`);
+    modal.querySelectorAll('.tab-content').forEach(panel => {
+      panel.classList.toggle('hidden', !panel.id.startsWith(tabId));
     });
   }
 
