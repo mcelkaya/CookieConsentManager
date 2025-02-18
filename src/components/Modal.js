@@ -55,7 +55,8 @@ export default class Modal {
 
     const modal = document.createElement('div');
     modal.id = 'cookie-consent-modal';
-    modal.className = 'hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center pointer-events-auto';
+    modal.className =
+      'hidden fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center pointer-events-auto';
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
     modal.setAttribute('aria-labelledby', 'modal-title');
@@ -64,7 +65,9 @@ export default class Modal {
       <div class="relative bg-white rounded-lg w-full max-w-2xl mx-4">
         <!-- Tab Navigation -->
         <div class="flex border-b" role="tablist">
-          ${Object.entries(VALID_TABS).map(([key, value]) => `
+          ${Object.entries(VALID_TABS)
+            .map(
+              ([key, value]) => `
             <button
               type="button"
               class="px-6 py-4 font-medium tab-button ${key === 'consent' ? 'active text-blue-600 border-b-2 border-blue-600' : 'text-gray-600'}"
@@ -73,7 +76,9 @@ export default class Modal {
               aria-selected="${key === 'consent'}"
               aria-controls="${value}-tab"
             >${sanitizeHTML(t.tabs[key] || key)}</button>
-          `).join('')}
+          `
+            )
+            .join('')}
         </div>
 
         <!-- Consent Tab -->
@@ -86,7 +91,8 @@ export default class Modal {
           </p>
           
           <div class="grid grid-cols-4 gap-4 mb-6 border-t border-b py-4">
-            ${COOKIE_TYPES.map(({ id, isRequired }) => `
+            ${COOKIE_TYPES.map(
+              ({ id, isRequired }) => `
               <div class="text-center">
                 <p class="font-medium mb-2">${sanitizeHTML(t.cookieTypes[id]?.title || id)}</p>
                 <label class="switch inline-block">
@@ -102,7 +108,8 @@ export default class Modal {
                   </div>
                 </label>
               </div>
-            `).join('')}
+            `
+            ).join('')}
           </div>
 
           <div class="flex gap-4">
@@ -127,7 +134,8 @@ export default class Modal {
         <!-- Details Tab -->
         <div id="details-tab" class="tab-content hidden p-6" role="tabpanel">
           <div class="space-y-4">
-            ${COOKIE_TYPES.map(({ id, isRequired }) => `
+            ${COOKIE_TYPES.map(
+              ({ id, isRequired }) => `
               <div class="cookie-section rounded-lg border border-gray-200 p-4">
                 <div class="flex items-center justify-between">
                   <h3 class="font-medium">${sanitizeHTML(t.cookieTypes[id]?.title || id)}</h3>
@@ -146,7 +154,8 @@ export default class Modal {
                 </div>
                 <p class="text-gray-600 mt-2">${sanitizeHTML(t.cookieTypes[id]?.description || '')}</p>
               </div>
-            `).join('')}
+            `
+            ).join('')}
           </div>
         </div>
 
@@ -172,11 +181,11 @@ export default class Modal {
         </div>
       </div>
     `;
-
     modal.innerHTML = sanitizeHTML(content);
     return modal;
   }
 
+  // Delegated listener for tab clicks and general clicks
   _handleClick(event) {
     if (DEBUG) {
       console.log('Delegated click event:', {
@@ -201,9 +210,10 @@ export default class Modal {
       event.stopPropagation();
       return;
     }
-    // Note: Action button clicks are now handled directly.
+    // Action buttons are handled by direct listeners.
   }
 
+  // Direct listener for action buttons
   _handleActionClick(event) {
     if (DEBUG) {
       console.log('Direct action click:', {
@@ -234,14 +244,11 @@ export default class Modal {
   _handleChange(event) {
     if (DEBUG) console.log('Change event:', event);
     const target = event.target;
-    
     if (target.matches('input[type="checkbox"][data-category]')) {
       const category = target.getAttribute('data-category');
       if (!category) return;
-
       const mainToggle = document.getElementById(`${category}-consent`);
       const detailsToggle = document.getElementById(`${category}-consent-details`);
-      
       if (mainToggle && detailsToggle) {
         const isChecked = target.checked;
         mainToggle.checked = isChecked;
@@ -256,9 +263,17 @@ export default class Modal {
     }
   }
 
+  // Updated: Guard against outside clicks that originate from action buttons
   _handleOutsideClick(event) {
     const modal = document.getElementById('cookie-consent-modal');
-    if (modal && !modal.contains(event.target) && this.isOpen) {
+    if (!modal) return;
+    // If the click originates from an element with data-action, ignore it.
+    if (event.target.closest('[data-action]')) {
+      if (DEBUG) console.log('Outside click ignored because action button was clicked.');
+      return;
+    }
+    if (!modal.contains(event.target) && this.isOpen) {
+      if (DEBUG) console.log('Outside click detected, hiding modal.');
       this.hide();
     }
   }
@@ -270,25 +285,23 @@ export default class Modal {
       console.error('Modal element not found');
       return;
     }
-
     // Remove any previously attached listeners
     this.removeEventListeners();
-
     // Attach delegated listeners on the modal container for tabs and changes
     modal.addEventListener('click', this._handleClick, false);
     modal.addEventListener('change', this._handleChange, false);
     document.addEventListener('keydown', this._handleKeyDown);
     document.addEventListener('click', this._handleOutsideClick);
-
     // Attach direct click listeners to all action buttons
     const actionButtons = modal.querySelectorAll('[data-action]');
+    console.log('Attaching action listeners to', actionButtons.length, 'buttons');
     actionButtons.forEach(button => {
       button.addEventListener('click', this._handleActionClick, false);
     });
-
     modal.classList.remove('hidden');
     this.isOpen = true;
     document.body.style.overflow = 'hidden';
+    if (DEBUG) console.log('Modal is now shown. isOpen:', this.isOpen);
   }
 
   hide() {
@@ -298,23 +311,20 @@ export default class Modal {
       console.error('Modal element not found');
       return;
     }
-
     this.removeEventListeners();
     modal.classList.add('hidden');
     this.isOpen = false;
     document.body.style.overflow = '';
+    if (DEBUG) console.log('Modal is now hidden. isOpen:', this.isOpen);
   }
 
   removeEventListeners() {
     const modal = document.getElementById('cookie-consent-modal');
     if (!modal) return;
-
     modal.removeEventListener('click', this._handleClick, false);
     modal.removeEventListener('change', this._handleChange, false);
     document.removeEventListener('keydown', this._handleKeyDown);
     document.removeEventListener('click', this._handleOutsideClick);
-
-    // Remove direct listeners from action buttons
     const actionButtons = modal.querySelectorAll('[data-action]');
     actionButtons.forEach(button => {
       button.removeEventListener('click', this._handleActionClick, false);
@@ -327,14 +337,11 @@ export default class Modal {
       console.warn('Invalid tab ID:', tabId);
       return;
     }
-
     const modal = document.getElementById('cookie-consent-modal');
     if (!modal) {
       console.error('Modal element not found');
       return;
     }
-
-    // Update tab buttons
     modal.querySelectorAll('.tab-button').forEach(button => {
       const isActive = button.getAttribute('data-tab') === tabId;
       button.classList.toggle('active', isActive);
@@ -344,8 +351,6 @@ export default class Modal {
       button.classList.toggle('text-gray-600', !isActive);
       button.setAttribute('aria-selected', isActive.toString());
     });
-
-    // Update content visibility
     modal.querySelectorAll('.tab-content').forEach(panel => {
       panel.classList.toggle('hidden', !panel.id.startsWith(tabId));
     });
