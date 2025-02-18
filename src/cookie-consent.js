@@ -4,7 +4,7 @@ import { CookieManager } from './core/CookieManager.js';
 import { StorageManager } from './core/StorageManager.js';
 import { LanguageManager } from './core/LanguageManager.js';
 import PreferencesButton from './components/PreferencesButton.js';
-import { translations } from './translations.js';
+import { translations, getTranslations } from './translations.js';
 
 const DEBUG = true;
 
@@ -21,14 +21,17 @@ class CookieConsentManager {
     this.currentLanguage = this.languageManager.detectLanguage();
     if (DEBUG) console.log('Detected language:', this.currentLanguage);
     
+    // Get language-specific translations
+    const languageTranslations = getTranslations(this.currentLanguage);
+
     this.necessaryCookies = options.necessaryCookies || [];
     this.marketingCookies = options.marketingCookies || [];
     this.analyticsCookies = options.analyticsCookies || [];
 
-    // Initialize UI components
+    // Initialize UI components with language-specific translations
     if (DEBUG) console.log('Initializing Modal component...');
     this.modal = new Modal({
-      translations,
+      translations: languageTranslations,
       language: this.currentLanguage,
       onSave: this.savePreferences.bind(this),
       onDeny: this.denyAll.bind(this),
