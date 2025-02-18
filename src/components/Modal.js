@@ -43,6 +43,7 @@ export default class Modal {
 
     // Bind methods to preserve context
     this._handleClick = this._handleClick.bind(this);
+    this._handleActionClick = this._handleActionClick.bind(this);
     this._handleChange = this._handleChange.bind(this);
     this._handleKeyDown = this._handleKeyDown.bind(this);
     this._handleOutsideClick = this._handleOutsideClick.bind(this);
@@ -178,7 +179,7 @@ export default class Modal {
 
   _handleClick(event) {
     if (DEBUG) {
-      console.log('Click event:', {
+      console.log('Delegated click event:', {
         target: event.target,
         currentTarget: event.currentTarget,
         dataAction: event.target.getAttribute('data-action'),
@@ -189,7 +190,7 @@ export default class Modal {
     }
     event.preventDefault();
 
-    // Handle tab button clicks
+    // Handle tab button clicks (delegated)
     const tabButton = event.target.closest('.tab-button');
     if (tabButton) {
       const tabId = tabButton.getAttribute('data-tab');
@@ -200,26 +201,33 @@ export default class Modal {
       event.stopPropagation();
       return;
     }
+    // Note: Action button clicks are now handled directly.
+  }
 
-    // Handle action button clicks
-    const actionButton = event.target.closest('[data-action]');
-    if (actionButton) {
-      const action = actionButton.getAttribute('data-action');
-      if (DEBUG) console.log('Action button clicked:', action);
-      event.stopPropagation();
-      switch (action) {
-        case 'deny':
-          this.onDeny();
-          break;
-        case 'save':
-          this.onSave();
-          break;
-        case 'accept':
-          this.onAccept();
-          break;
-        default:
-          console.warn('Unknown action:', action);
-      }
+  _handleActionClick(event) {
+    if (DEBUG) {
+      console.log('Direct action click:', {
+        target: event.target,
+        currentTarget: event.currentTarget,
+        action: event.currentTarget.getAttribute('data-action')
+      });
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const action = event.currentTarget.getAttribute('data-action');
+    if (DEBUG) console.log('Action button clicked:', action);
+    switch (action) {
+      case 'deny':
+        this.onDeny();
+        break;
+      case 'save':
+        this.onSave();
+        break;
+      case 'accept':
+        this.onAccept();
+        break;
+      default:
+        console.warn('Unknown action:', action);
     }
   }
 
@@ -266,11 +274,17 @@ export default class Modal {
     // Remove any previously attached listeners
     this.removeEventListeners();
 
-    // Attach event listeners in the bubbling phase
+    // Attach delegated listeners on the modal container for tabs and changes
     modal.addEventListener('click', this._handleClick, false);
     modal.addEventListener('change', this._handleChange, false);
     document.addEventListener('keydown', this._handleKeyDown);
     document.addEventListener('click', this._handleOutsideClick);
+
+    // Attach direct click listeners to all action buttons
+    const actionButtons = modal.querySelectorAll('[data-action]');
+    actionButtons.forEach(button => {
+      button.addEventListener('click', this._handleActionClick, false);
+    });
 
     modal.classList.remove('hidden');
     this.isOpen = true;
@@ -299,6 +313,12 @@ export default class Modal {
     modal.removeEventListener('change', this._handleChange, false);
     document.removeEventListener('keydown', this._handleKeyDown);
     document.removeEventListener('click', this._handleOutsideClick);
+
+    // Remove direct listeners from action buttons
+    const actionButtons = modal.querySelectorAll('[data-action]');
+    actionButtons.forEach(button => {
+      button.removeEventListener('click', this._handleActionClick, false);
+    });
   }
 
   switchToTab(tabId) {
