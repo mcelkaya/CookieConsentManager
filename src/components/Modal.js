@@ -40,6 +40,7 @@ export default class Modal {
     this.onDeny = options.onDeny;
     this.onAccept = options.onAccept;
     this.isOpen = false;
+    this.modalElement = null; // persistent reference to the modal
 
     // Bind methods to preserve context
     this._handleClick = this._handleClick.bind(this);
@@ -50,6 +51,8 @@ export default class Modal {
   }
 
   render() {
+    if (this.modalElement) return this.modalElement; // already rendered
+
     const t = this.getTranslations();
     if (!t) return null;
 
@@ -182,24 +185,22 @@ export default class Modal {
       </div>
     `;
     modal.innerHTML = sanitizeHTML(content);
+    this.modalElement = modal; // store reference
     return modal;
   }
 
-  // Delegated listener for tab clicks and general clicks
+  // Delegated listener for tab clicks and general clicks (if needed)
   _handleClick(event) {
     if (DEBUG) {
       console.log('Delegated click event:', {
         target: event.target,
-        currentTarget: event.currentTarget,
         dataAction: event.target.getAttribute('data-action'),
         dataTab: event.target.getAttribute('data-tab'),
-        parentAction: event.target.closest('[data-action]')?.getAttribute('data-action'),
         parentTab: event.target.closest('.tab-button')?.getAttribute('data-tab')
       });
     }
     event.preventDefault();
-
-    // Handle tab button clicks (delegated)
+    // Handle tab button clicks
     const tabButton = event.target.closest('.tab-button');
     if (tabButton) {
       const tabId = tabButton.getAttribute('data-tab');
@@ -208,9 +209,7 @@ export default class Modal {
         this.switchToTab(tabId);
       }
       event.stopPropagation();
-      return;
     }
-    // Action buttons are handled by direct listeners.
   }
 
   // Direct listener for action buttons
@@ -218,12 +217,12 @@ export default class Modal {
     if (DEBUG) {
       console.log('Direct action click:', {
         target: event.target,
-        currentTarget: event.currentTarget,
         action: event.currentTarget.getAttribute('data-action')
       });
     }
     event.preventDefault();
     event.stopPropagation();
+    event.stopImmediatePropagation();
     const action = event.currentTarget.getAttribute('data-action');
     if (DEBUG) console.log('Action button clicked:', action);
     switch (action) {
@@ -259,46 +258,45 @@ export default class Modal {
 
   _handleKeyDown(event) {
     if (event.key === 'Escape' && this.isOpen) {
+      this.onDeny(); // Treat Escape as Deny
       this.hide();
     }
   }
 
-  // Updated: Guard against outside clicks that originate from action buttons
+  // Guard outside clicks—but if click originates on an element with data-action, treat that as an action.
   _handleOutsideClick(event) {
-    const modal = document.getElementById('cookie-consent-modal');
+    const modal = this.modalElement;
     if (!modal) return;
-    // If the click originates from an element with data-action, ignore it.
-    if (event.target.closest('[data-action]')) {
-      if (DEBUG) console.log('Outside click ignored because action button was clicked.');
-      return;
-    }
-    if (!modal.contains(event.target) && this.isOpen) {
-      if (DEBUG) console.log('Outside click detected, hiding modal.');
-      this.hide();
-    }
+    // If the click is inside the modal, do nothing.
+    if (modal.contains(event.target)) return;
+    if (DEBUG) console.log('Outside click detected. Treating as Deny.');
+    this.onDeny();
+    this.hide();
   }
 
   show() {
     if (DEBUG) console.log('Showing modal');
-    const modal = document.getElementById('cookie-consent-modal');
-    if (!modal) {
-      console.error('Modal element not found');
-      return;
-    }
+    const modal = this.modalElement || this.render();
     // Remove any previously attached listeners
     this.removeEventListeners();
-    // Attach delegated listeners on the modal container for tabs and changes
+
+    // Attach delegated listeners for tabs and changes
     modal.addEventListener('click', this._handleClick, false);
     modal.addEventListener('change', this._handleChange, false);
     document.addEventListener('keydown', this._handleKeyDown);
     document.addEventListener('click', this._handleOutsideClick);
+
     // Attach direct click listeners to all action buttons
     const actionButtons = modal.querySelectorAll('[data-action]');
-    console.log('Attaching action listeners to', actionButtons.length, 'buttons');
+    if (DEBUG) console.log('Attaching action listeners to', actionButtons.length, 'buttons');
     actionButtons.forEach(button => {
       button.addEventListener('click', this._handleActionClick, false);
     });
+
+    // Ensure modal is visible
     modal.classList.remove('hidden');
+    // Also explicitly set display if needed
+    modal.style.display = 'flex';
     this.isOpen = true;
     document.body.style.overflow = 'hidden';
     if (DEBUG) console.log('Modal is now shown. isOpen:', this.isOpen);
@@ -306,20 +304,22 @@ export default class Modal {
 
   hide() {
     if (DEBUG) console.log('Hiding modal');
-    const modal = document.getElementById('cookie-consent-modal');
+    const modal = this.modalElement;
     if (!modal) {
       console.error('Modal element not found');
       return;
     }
     this.removeEventListeners();
     modal.classList.add('hidden');
+    // Optionally, clear inline display style
+    modal.style.display = '';
     this.isOpen = false;
     document.body.style.overflow = '';
     if (DEBUG) console.log('Modal is now hidden. isOpen:', this.isOpen);
   }
 
   removeEventListeners() {
-    const modal = document.getElementById('cookie-consent-modal');
+    const modal = this.modalElement;
     if (!modal) return;
     modal.removeEventListener('click', this._handleClick, false);
     modal.removeEventListener('change', this._handleChange, false);
@@ -337,7 +337,7 @@ export default class Modal {
       console.warn('Invalid tab ID:', tabId);
       return;
     }
-    const modal = document.getElementById('cookie-consent-modal');
+    const modal = this.modalElement;
     if (!modal) {
       console.error('Modal element not found');
       return;
