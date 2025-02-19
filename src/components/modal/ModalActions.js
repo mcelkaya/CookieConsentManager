@@ -6,16 +6,6 @@ export default class ModalActions {
       this.onAccept = onAccept;
     }
     
-    handleClick(callback, event) {
-      // Stop event propagation to prevent bubbling
-      event.stopPropagation();
-      
-      // Execute the callback if it exists
-      if (typeof callback === 'function') {
-        callback(event);
-      }
-    }
-    
     render() {
       const t = this.translations;
       const container = document.createElement('div');
@@ -26,7 +16,7 @@ export default class ModalActions {
       denyButton.type = 'button';
       denyButton.className = 'flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50';
       denyButton.textContent = t.initialModal.deny;
-      denyButton.addEventListener('click', this.handleClick.bind(this, this.onDeny));
+      denyButton.setAttribute('data-action', 'deny');
       container.appendChild(denyButton);
       
       // Save preferences button
@@ -34,7 +24,7 @@ export default class ModalActions {
       saveButton.type = 'button';
       saveButton.className = 'flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50';
       saveButton.textContent = t.initialModal.allowSelection;
-      saveButton.addEventListener('click', this.handleClick.bind(this, this.onSave));
+      saveButton.setAttribute('data-action', 'save');
       container.appendChild(saveButton);
       
       // Accept all button
@@ -42,7 +32,7 @@ export default class ModalActions {
       acceptButton.type = 'button';
       acceptButton.className = 'flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700';
       acceptButton.textContent = t.initialModal.allowAll;
-      acceptButton.addEventListener('click', this.handleClick.bind(this, this.onAccept));
+      acceptButton.setAttribute('data-action', 'accept');
       container.appendChild(acceptButton);
       
       return container;

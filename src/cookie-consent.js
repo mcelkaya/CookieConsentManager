@@ -8,9 +8,26 @@ import { translations, getTranslations } from './translations.js';
 
 const DEBUG = true;
 
+const addDebugListeners = () => {
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    console.log('Document click:', {
+      target,
+      targetTag: target.tagName,
+      targetClasses: target.className,
+      closestModal: target.closest('#cookie-consent-modal') ? 'Found' : 'Not found',
+      closestTabButton: target.closest('.tab-button') ? 'Found' : 'Not found',
+      closestActionButton: target.closest('[data-action]') ? 'Found' : 'Not found'
+    });
+  });
+};
+
 class CookieConsentManager {
   constructor(options = {}) {
-    if (DEBUG) console.log('CookieConsentManager constructor called with options:', options);
+    if (DEBUG) {
+      console.log('CookieConsentManager constructor called with options:', options);
+      addDebugListeners();
+    }
     
     // Initialize core managers
     this.cookieManager = new CookieManager('.herm.io');
@@ -76,6 +93,29 @@ class CookieConsentManager {
     // Initialize tabs
     this.tabs.init();
     if (DEBUG) console.log('Tabs initialized');
+
+    // Add periodic modal state check for debugging
+    if (DEBUG) {
+      let checkCount = 0;
+      const checkInterval = setInterval(() => {
+        checkCount++;
+        console.log('Modal check ' + checkCount + '/5');
+        const modal = document.getElementById('cookie-consent-modal');
+        if (modal) {
+          console.log('Cookie consent modal state:', {
+            exists: true,
+            visible: !modal.classList.contains('hidden'),
+            tabButtons: modal.querySelectorAll('.tab-button').length,
+            actionButtons: modal.querySelectorAll('[data-action]').length,
+            zIndex: modal.style.zIndex || '999999',
+            display: modal.style.display
+          });
+        } else {
+          console.log('Cookie consent modal state:', { exists: false });
+        }
+        if (checkCount >= 5) clearInterval(checkInterval);
+      }, 1000);
+    }
   }
 
   checkAndShowBanner() {
