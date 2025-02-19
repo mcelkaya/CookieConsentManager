@@ -13,9 +13,6 @@ export default class Modal {
       this.onTabChange = options.onTabChange;
       this.activeTab = 'consent';
       
-      this.handleAction = this.handleAction.bind(this);
-      this.handleClick = this.handleClick.bind(this);
-      
       this.overlay = new ModalOverlay({
         onOutsideClick: (e) => {
           if (e.target.id === 'cookie-consent-modal') {
@@ -40,70 +37,29 @@ export default class Modal {
       });
       
       this.actions = new ModalActions({
-        translations: this.translations
+        translations: this.translations,
+        onDeny: () => {
+          if (typeof this.onDeny === 'function') {
+            this.onDeny();
+          }
+          this.hide();
+        },
+        onSave: () => {
+          if (typeof this.onSave === 'function') {
+            this.onSave();
+          }
+          this.hide();
+        },
+        onAccept: () => {
+          if (typeof this.onAccept === 'function') {
+            this.onAccept();
+          }
+          this.hide();
+        }
       });
       
       this.modalElement = null;
       this.isOpen = false;
-    }
-
-    handleClick(event) {
-      // Log all clicks for debugging
-      if (typeof window !== 'undefined' && window.DEBUG) {
-        console.log('Modal Click:', {
-          target: event.target,
-          currentTarget: event.currentTarget,
-          action: event.target.getAttribute('data-action'),
-          prevented: event.defaultPrevented,
-          path: event.composedPath().map(el => el.tagName).join(' > ')
-        });
-      }
-
-      // Check if click is on an action button
-      const actionButton = event.target.closest('[data-action]');
-      if (actionButton) {
-        this.handleAction(event);
-      }
-    }
-    
-    handleAction(event) {
-      const actionButton = event.target.closest('[data-action]');
-      if (!actionButton) return;
-      
-      event.preventDefault();
-      event.stopPropagation();
-
-      const action = actionButton.getAttribute('data-action');
-      
-      if (typeof window !== 'undefined' && window.DEBUG) {
-        console.log('Action triggered:', {
-          action,
-          button: actionButton,
-          callbacks: {
-            onDeny: typeof this.onDeny === 'function',
-            onSave: typeof this.onSave === 'function',
-            onAccept: typeof this.onAccept === 'function'
-          }
-        });
-      }
-      
-      switch (action) {
-        case 'deny':
-          if (typeof this.onDeny === 'function') {
-            this.onDeny();
-          }
-          break;
-        case 'save':
-          if (typeof this.onSave === 'function') {
-            this.onSave();
-          }
-          break;
-        case 'accept':
-          if (typeof this.onAccept === 'function') {
-            this.onAccept();
-          }
-          break;
-      }
     }
     
     render() {
@@ -115,19 +71,21 @@ export default class Modal {
       innerContainer.appendChild(tabsElement);
       innerContainer.appendChild(actionsElement);
       
-      // Add click handler to the inner container
-      innerContainer.addEventListener('click', this.handleClick);
-      
       const contentElement = this.content.render(innerContainer);
       this.modalElement = this.overlay.render(contentElement);
       
-      // Add click handler to the entire modal for debugging
+      // Add debugging if needed
       if (typeof window !== 'undefined' && window.DEBUG) {
         this.modalElement.addEventListener('click', (e) => {
-          console.log('Modal Root Click:', {
+          console.log('Modal Click:', {
             target: e.target,
-            hasAction: !!e.target.closest('[data-action]'),
-            prevented: e.defaultPrevented
+            targetType: e.target.tagName,
+            handler: e.target.onclick ? 'Has click handler' : 'No click handler',
+            callbacks: {
+              onDeny: typeof this.onDeny === 'function',
+              onSave: typeof this.onSave === 'function',
+              onAccept: typeof this.onAccept === 'function'
+            }
           });
         }, true);
       }
