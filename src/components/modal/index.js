@@ -14,6 +14,7 @@ export default class Modal {
       this.activeTab = 'consent';
       
       this.handleAction = this.handleAction.bind(this);
+      this.handleClick = this.handleClick.bind(this);
       
       this.overlay = new ModalOverlay({
         onOutsideClick: (e) => {
@@ -45,6 +46,25 @@ export default class Modal {
       this.modalElement = null;
       this.isOpen = false;
     }
+
+    handleClick(event) {
+      // Log all clicks for debugging
+      if (typeof window !== 'undefined' && window.DEBUG) {
+        console.log('Modal Click:', {
+          target: event.target,
+          currentTarget: event.currentTarget,
+          action: event.target.getAttribute('data-action'),
+          prevented: event.defaultPrevented,
+          path: event.composedPath().map(el => el.tagName).join(' > ')
+        });
+      }
+
+      // Check if click is on an action button
+      const actionButton = event.target.closest('[data-action]');
+      if (actionButton) {
+        this.handleAction(event);
+      }
+    }
     
     handleAction(event) {
       const actionButton = event.target.closest('[data-action]');
@@ -52,8 +72,21 @@ export default class Modal {
       
       event.preventDefault();
       event.stopPropagation();
-      
+
       const action = actionButton.getAttribute('data-action');
+      
+      if (typeof window !== 'undefined' && window.DEBUG) {
+        console.log('Action triggered:', {
+          action,
+          button: actionButton,
+          callbacks: {
+            onDeny: typeof this.onDeny === 'function',
+            onSave: typeof this.onSave === 'function',
+            onAccept: typeof this.onAccept === 'function'
+          }
+        });
+      }
+      
       switch (action) {
         case 'deny':
           if (typeof this.onDeny === 'function') {
@@ -82,18 +115,18 @@ export default class Modal {
       innerContainer.appendChild(tabsElement);
       innerContainer.appendChild(actionsElement);
       
-      // Add event delegation for action buttons
-      innerContainer.addEventListener('click', this.handleAction, true); // Using capture phase
+      // Add click handler to the inner container
+      innerContainer.addEventListener('click', this.handleClick);
       
       const contentElement = this.content.render(innerContainer);
       this.modalElement = this.overlay.render(contentElement);
       
-      // Add a direct click handler to the modal content for debugging
+      // Add click handler to the entire modal for debugging
       if (typeof window !== 'undefined' && window.DEBUG) {
-        contentElement.addEventListener('click', (e) => {
-          console.log('Modal content click:', {
+        this.modalElement.addEventListener('click', (e) => {
+          console.log('Modal Root Click:', {
             target: e.target,
-            action: e.target.closest('[data-action]')?.getAttribute('data-action'),
+            hasAction: !!e.target.closest('[data-action]'),
             prevented: e.defaultPrevented
           });
         }, true);
