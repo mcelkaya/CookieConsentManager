@@ -52,13 +52,19 @@ export default class ModalActions {
     const container = document.createElement('div');
     container.className = 'modal-actions flex gap-4 mt-4';
     
+    // Add a capturing listener on the container to log all click events
+    container.addEventListener('click', (e) => {
+      console.log("ModalActions container capturing click event:", e.target);
+    }, true);
+    
     // Deny button
     const denyButton = document.createElement('button');
     denyButton.type = 'button';
     denyButton.className = 'flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50';
     denyButton.textContent = t.initialModal.deny;
     denyButton.setAttribute('data-action', 'deny'); // Added attribute for identification
-    denyButton.addEventListener('click', this.handleDeny);
+    // Attach the listener in capture phase
+    denyButton.addEventListener('click', this.handleDeny, { capture: true });
     container.appendChild(denyButton);
     
     // Save preferences button
@@ -67,7 +73,8 @@ export default class ModalActions {
     saveButton.className = 'flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50';
     saveButton.textContent = t.initialModal.allowSelection;
     saveButton.setAttribute('data-action', 'save'); // Added attribute for identification
-    saveButton.addEventListener('click', this.handleSave);
+    // Attach the listener in capture phase
+    saveButton.addEventListener('click', this.handleSave, { capture: true });
     container.appendChild(saveButton);
     
     // Accept all button
@@ -76,7 +83,8 @@ export default class ModalActions {
     acceptButton.className = 'flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700';
     acceptButton.textContent = t.initialModal.allowAll;
     acceptButton.setAttribute('data-action', 'accept'); // Added attribute for identification
-    acceptButton.addEventListener('click', this.handleAccept);
+    // Attach the listener in capture phase
+    acceptButton.addEventListener('click', this.handleAccept, { capture: true });
     container.appendChild(acceptButton);
     
     console.log("ModalActions: Rendered action buttons", container);
