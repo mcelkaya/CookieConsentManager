@@ -12,26 +12,38 @@ export default class ModalActions {
   }
   
   handleDeny(event) {
+    console.log("ModalActions: handleDeny triggered", event);
     event.preventDefault();
     event.stopPropagation();
     if (typeof this.onDeny === 'function') {
+      console.log("ModalActions: calling onDeny callback");
       this.onDeny();
+    } else {
+      console.warn("ModalActions: onDeny callback is not a function");
     }
   }
   
   handleSave(event) {
+    console.log("ModalActions: handleSave triggered", event);
     event.preventDefault();
     event.stopPropagation();
     if (typeof this.onSave === 'function') {
+      console.log("ModalActions: calling onSave callback");
       this.onSave();
+    } else {
+      console.warn("ModalActions: onSave callback is not a function");
     }
   }
   
   handleAccept(event) {
+    console.log("ModalActions: handleAccept triggered", event);
     event.preventDefault();
     event.stopPropagation();
     if (typeof this.onAccept === 'function') {
+      console.log("ModalActions: calling onAccept callback");
       this.onAccept();
+    } else {
+      console.warn("ModalActions: onAccept callback is not a function");
     }
   }
   
@@ -45,7 +57,7 @@ export default class ModalActions {
     denyButton.type = 'button';
     denyButton.className = 'flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50';
     denyButton.textContent = t.initialModal.deny;
-    denyButton.setAttribute('data-action', 'deny'); // Added attribute
+    denyButton.setAttribute('data-action', 'deny'); // Added attribute for identification
     denyButton.addEventListener('click', this.handleDeny);
     container.appendChild(denyButton);
     
@@ -54,7 +66,7 @@ export default class ModalActions {
     saveButton.type = 'button';
     saveButton.className = 'flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50';
     saveButton.textContent = t.initialModal.allowSelection;
-    saveButton.setAttribute('data-action', 'save'); // Added attribute
+    saveButton.setAttribute('data-action', 'save'); // Added attribute for identification
     saveButton.addEventListener('click', this.handleSave);
     container.appendChild(saveButton);
     
@@ -63,10 +75,11 @@ export default class ModalActions {
     acceptButton.type = 'button';
     acceptButton.className = 'flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700';
     acceptButton.textContent = t.initialModal.allowAll;
-    acceptButton.setAttribute('data-action', 'accept'); // Added attribute
+    acceptButton.setAttribute('data-action', 'accept'); // Added attribute for identification
     acceptButton.addEventListener('click', this.handleAccept);
     container.appendChild(acceptButton);
     
+    console.log("ModalActions: Rendered action buttons", container);
     return container;
   }
 }
