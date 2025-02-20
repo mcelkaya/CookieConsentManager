@@ -37,13 +37,17 @@ const generateSecureNonce = () => {
 
 /**
  * Helper function to format a single CSP directive.
+ *
+ * For the 'script-src' directive, if the URL includes ?debugCSP=true,
+ * the function will add the 'unsafe-inline' keyword so that inline scripts are allowed.
  */
 const formatDirective = (key, values, nonce) => {
   let finalValues = values;
   if (key === 'script-src') {
-    // Add the nonce, and if in debug mode, include 'unsafe-inline'
+    // Always add the nonce.
     finalValues = [...values, `'nonce-${nonce}'`];
-    if (window.DEBUG) {
+    // If the URL contains debugCSP=true, allow inline scripts.
+    if (document.location.search.indexOf('debugCSP=true') > -1) {
       finalValues.push("'unsafe-inline'");
     }
   }
@@ -99,19 +103,14 @@ export const isValidUrl = (url) => {
  * Helper function to validate a single rule for a given value.
  */
 const validateRule = (value, rules) => {
-  // Required field check
   if (rules.required && value == null) return false;
   if (!rules.required && value == null) return true;
-  // Type check
   if (rules.type && typeof value !== rules.type) return false;
-  // Pattern check for strings
   if (rules.pattern && typeof value === 'string' && !rules.pattern.test(value)) return false;
-  // Length check for strings
   if (typeof value === 'string') {
     if (rules.minLength && value.length < rules.minLength) return false;
     if (rules.maxLength && value.length > rules.maxLength) return false;
   }
-  // Range check for numbers
   if (typeof value === 'number') {
     if (rules.min && value < rules.min) return false;
     if (rules.max && value > rules.max) return false;
@@ -170,11 +169,9 @@ export class RateLimiter {
   checkAndUpdateRequests(key, now) {
     const requestTimes = this.requests.get(key) || [];
     const recentRequests = requestTimes.filter(time => time > now - this.timeWindow);
-
     if (recentRequests.length >= this.maxRequests) {
       return false;
     }
-
     recentRequests.push(now);
     this.requests.set(key, recentRequests);
     return true;
@@ -182,7 +179,8 @@ export class RateLimiter {
 }
 
 /**
- * Add security headers
+ * Add security headers (Note: These meta tags must be delivered via HTTP headers for full protection,
+ * but are added here as a fallback).
  */
 export const addSecurityHeaders = () => {
   const headers = {
