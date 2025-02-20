@@ -15,7 +15,7 @@ export default class Modal {
     
     this.overlay = new ModalOverlay({
       onOutsideClick: (e) => {
-        console.log("Outside click detected on overlay:", e);
+        console.log("ModalOverlay: Outside click detected", e);
         if (e.target.id === 'cookie-consent-modal') {
           if (typeof this.onDeny === 'function') {
             this.onDeny();
@@ -30,7 +30,7 @@ export default class Modal {
       translations: this.translations,
       activeTab: this.activeTab,
       onTabChange: (tab) => {
-        console.log("Tab change detected:", tab);
+        console.log("ModalTabs: Tab changed", tab);
         this.activeTab = tab;
         if (typeof this.onTabChange === 'function') {
           this.onTabChange(tab);
@@ -41,21 +41,21 @@ export default class Modal {
     this.actions = new ModalActions({
       translations: this.translations,
       onDeny: () => {
-        console.log("Action: Deny clicked");
+        console.log("ModalActions: Deny clicked");
         if (typeof this.onDeny === 'function') {
           this.onDeny();
         }
         this.hide();
       },
       onSave: () => {
-        console.log("Action: Save clicked");
+        console.log("ModalActions: Save clicked");
         if (typeof this.onSave === 'function') {
           this.onSave();
         }
         this.hide();
       },
       onAccept: () => {
-        console.log("Action: Accept clicked");
+        console.log("ModalActions: Accept clicked");
         if (typeof this.onAccept === 'function') {
           this.onAccept();
         }
@@ -79,13 +79,20 @@ export default class Modal {
     const contentElement = this.content.render(innerContainer);
     this.modalElement = this.overlay.render(contentElement);
     
+    // Attach a MutationObserver if debugging is enabled to detect re-rendering
+    if (window.DEBUG) {
+      const observer = new MutationObserver((mutationsList) => {
+        console.log("Modal MutationObserver: mutations detected:", mutationsList);
+      });
+      observer.observe(this.modalElement, { attributes: true, childList: true, subtree: true });
+    }
+    
     // Debug click logging on the modal element
-    if (typeof window !== 'undefined' && window.DEBUG) {
+    if (window.DEBUG) {
       this.modalElement.addEventListener('click', (e) => {
-        console.log('Modal Click:', {
+        console.log('Modal: Click event', {
           target: e.target,
           targetType: e.target.tagName,
-          handler: e.target.onclick ? 'Has click handler' : 'No click handler',
           callbacks: {
             onDeny: typeof this.onDeny === 'function',
             onSave: typeof this.onSave === 'function',
@@ -103,7 +110,7 @@ export default class Modal {
       this.render();
       document.body.appendChild(this.modalElement);
     }
-    console.log("Modal show() invoked. Pre-update state:", {
+    console.log("Modal: show() called, before update", {
       classList: Array.from(this.modalElement.classList),
       inlineDisplay: this.modalElement.style.display,
       computedDisplay: window.getComputedStyle(this.modalElement).display
@@ -112,7 +119,7 @@ export default class Modal {
     this.modalElement.style.display = 'flex';
     this.isOpen = true;
     document.body.style.overflow = 'hidden';
-    console.log("Modal state after show() update:", {
+    console.log("Modal: show() updated", {
       classList: Array.from(this.modalElement.classList),
       inlineDisplay: this.modalElement.style.display,
       computedDisplay: window.getComputedStyle(this.modalElement).display
@@ -121,7 +128,7 @@ export default class Modal {
   
   hide() {
     if (this.modalElement) {
-      console.log("Modal hide() invoked. Pre-update state:", {
+      console.log("Modal: hide() called, before update", {
         classList: Array.from(this.modalElement.classList),
         inlineDisplay: this.modalElement.style.display,
         computedDisplay: window.getComputedStyle(this.modalElement).display
@@ -130,14 +137,14 @@ export default class Modal {
       this.modalElement.style.display = 'none';
       this.isOpen = false;
       document.body.style.overflow = '';
-      console.log("Modal state after hide() update:", {
+      console.log("Modal: hide() updated", {
         classList: Array.from(this.modalElement.classList),
         inlineDisplay: this.modalElement.style.display,
         computedDisplay: window.getComputedStyle(this.modalElement).display
       });
     }
   }
-
+  
   switchToTab(tabId) {
     if (this.tabs && typeof this.tabs.switchTab === 'function') {
       this.tabs.switchTab(tabId);

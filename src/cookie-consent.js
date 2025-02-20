@@ -5,8 +5,15 @@ import { StorageManager } from './core/StorageManager.js';
 import { LanguageManager } from './core/LanguageManager.js';
 import PreferencesButton from './components/PreferencesButton.js';
 import { translations, getTranslations } from './translations.js';
+import { setupCSP } from './utils/security.js';
 
 const DEBUG = true;
+
+if (DEBUG) {
+  // Setup CSP with debug modifications
+  const nonce = setupCSP();
+  console.log("CSP setup complete, nonce:", nonce);
+}
 
 const addDebugListeners = () => {
   document.addEventListener('click', (e) => {

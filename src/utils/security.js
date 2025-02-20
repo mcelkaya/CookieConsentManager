@@ -39,12 +39,19 @@ const generateSecureNonce = () => {
  * Helper function to format a single CSP directive.
  */
 const formatDirective = (key, values, nonce) => {
-  const finalValues = key === 'script-src' ? [...values, `'nonce-${nonce}'`] : values;
+  let finalValues = values;
+  if (key === 'script-src') {
+    // Add the nonce, and if in debug mode, include 'unsafe-inline'
+    finalValues = [...values, `'nonce-${nonce}'`];
+    if (window.DEBUG) {
+      finalValues.push("'unsafe-inline'");
+    }
+  }
   return `${key} ${finalValues.join(' ')}`;
 };
 
 /**
- * Construct CSP directives using the helper to reduce complexity.
+ * Construct CSP directives using the helper.
  */
 const constructCSPDirectives = (nonce) => {
   const directives = safeObjectEntries(SECURITY_CONFIG.CSP_DIRECTIVES)
@@ -67,6 +74,7 @@ export const setupCSP = () => {
     meta.content = cspDirectives;
     document.head.appendChild(meta);
     
+    console.log("Security: CSP meta tag added:", meta.content);
     return nonce;
   } catch (error) {
     console.error('Error setting up CSP:', error);
