@@ -15,12 +15,9 @@ export default class Modal {
     
     this.overlay = new ModalOverlay({
       onOutsideClick: (e) => {
-        console.log("ModalOverlay: Outside click detected", e);
+        console.log("ModalOverlay: Outside click detected");
         if (e.target.id === 'cookie-consent-modal') {
-          if (typeof this.onDeny === 'function') {
-            this.onDeny();
-          }
-          this.hide();
+          this.handleDeny();
         }
       }
     });
@@ -42,29 +39,56 @@ export default class Modal {
       translations: this.translations,
       onDeny: () => {
         console.log("ModalActions: Deny clicked");
-        if (typeof this.onDeny === 'function') {
-          this.onDeny();
-        }
-        this.hide();
+        this.handleDeny();
       },
       onSave: () => {
         console.log("ModalActions: Save clicked");
-        if (typeof this.onSave === 'function') {
-          this.onSave();
-        }
-        this.hide();
+        this.handleSave();
       },
       onAccept: () => {
         console.log("ModalActions: Accept clicked");
-        if (typeof this.onAccept === 'function') {
-          this.onAccept();
-        }
-        this.hide();
+        this.handleAccept();
       }
     });
     
     this.modalElement = null;
     this.isOpen = false;
+  }
+  
+  handleDeny() {
+    console.log("Modal: handleDeny called");
+    try {
+      if (typeof this.onDeny === 'function') {
+        this.onDeny();
+      }
+    } catch (error) {
+      console.error("Error in onDeny callback:", error);
+    }
+    this.forceHide();
+  }
+  
+  handleSave() {
+    console.log("Modal: handleSave called");
+    try {
+      if (typeof this.onSave === 'function') {
+        this.onSave();
+      }
+    } catch (error) {
+      console.error("Error in onSave callback:", error);
+    }
+    this.forceHide();
+  }
+  
+  handleAccept() {
+    console.log("Modal: handleAccept called");
+    try {
+      if (typeof this.onAccept === 'function') {
+        this.onAccept();
+      }
+    } catch (error) {
+      console.error("Error in onAccept callback:", error);
+    }
+    this.forceHide();
   }
   
   render() {
@@ -78,14 +102,6 @@ export default class Modal {
     
     const contentElement = this.content.render(innerContainer);
     this.modalElement = this.overlay.render(contentElement);
-    
-    // Attach a MutationObserver if debugging is enabled to detect re-rendering
-    if (window.DEBUG) {
-      const observer = new MutationObserver((mutationsList) => {
-        console.log("Modal MutationObserver: mutations detected:", mutationsList);
-      });
-      observer.observe(this.modalElement, { attributes: true, childList: true, subtree: true });
-    }
     
     // Debug click logging on the modal element
     if (window.DEBUG) {
@@ -110,39 +126,78 @@ export default class Modal {
       this.render();
       document.body.appendChild(this.modalElement);
     }
-    console.log("Modal: show() called, before update", {
-      classList: Array.from(this.modalElement.classList),
-      inlineDisplay: this.modalElement.style.display,
-      computedDisplay: window.getComputedStyle(this.modalElement).display
-    });
+    console.log("Modal: show() called");
+    
     this.modalElement.classList.remove('hidden');
     this.modalElement.style.display = 'flex';
     this.isOpen = true;
     document.body.style.overflow = 'hidden';
-    console.log("Modal: show() updated", {
-      classList: Array.from(this.modalElement.classList),
-      inlineDisplay: this.modalElement.style.display,
-      computedDisplay: window.getComputedStyle(this.modalElement).display
-    });
+    
+    // Add direct click handlers to buttons after rendering
+    this.addDirectActionHandlers();
   }
   
   hide() {
     if (this.modalElement) {
-      console.log("Modal: hide() called, before update", {
-        classList: Array.from(this.modalElement.classList),
-        inlineDisplay: this.modalElement.style.display,
-        computedDisplay: window.getComputedStyle(this.modalElement).display
-      });
+      console.log("Modal: hide() called");
       this.modalElement.classList.add('hidden');
       this.modalElement.style.display = 'none';
       this.isOpen = false;
       document.body.style.overflow = '';
-      console.log("Modal: hide() updated", {
-        classList: Array.from(this.modalElement.classList),
-        inlineDisplay: this.modalElement.style.display,
-        computedDisplay: window.getComputedStyle(this.modalElement).display
-      });
     }
+  }
+  
+  // Force hide that will always work
+  forceHide() {
+    if (this.modalElement) {
+      console.log("Modal: forceHide() called");
+      this.modalElement.classList.add('hidden');
+      this.modalElement.style.display = 'none';
+      this.isOpen = false;
+      document.body.style.overflow = '';
+    }
+  }
+  
+  // Add direct click handlers to buttons as a fallback
+  addDirectActionHandlers() {
+    setTimeout(() => {
+      if (!this.modalElement) return;
+      
+      // Find all action buttons
+      const denyButton = this.modalElement.querySelector('[data-action="deny"]');
+      const saveButton = this.modalElement.querySelector('[data-action="save"]');
+      const acceptButton = this.modalElement.querySelector('[data-action="accept"]');
+      
+      // Add direct handlers
+      if (denyButton) {
+        denyButton.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.handleDeny();
+          return false;
+        };
+      }
+      
+      if (saveButton) {
+        saveButton.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.handleSave();
+          return false;
+        };
+      }
+      
+      if (acceptButton) {
+        acceptButton.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.handleAccept();
+          return false;
+        };
+      }
+      
+      console.log("Direct action handlers added to buttons");
+    }, 100);
   }
   
   switchToTab(tabId) {
