@@ -9,10 +9,17 @@ import { setupCSP } from './utils/security.js';
 
 const DEBUG = true;
 
-if (DEBUG) {
-  // Setup CSP with debug modifications
+// Check if we're in a development environment or embedded
+const isDevelopment = window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1' ||
+                     window.location.hostname.includes('.pages.dev');
+
+// Only set up CSP in development environments
+if (DEBUG && isDevelopment) {
   const nonce = setupCSP();
   console.log("CSP setup complete, nonce:", nonce);
+} else if (DEBUG) {
+  console.log("Skipping CSP setup as we're embedded in a production site");
 }
 
 const addDebugListeners = () => {

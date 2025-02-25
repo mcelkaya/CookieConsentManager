@@ -2,8 +2,10 @@ import { addEventListeners } from '../utils/events';
 import { safeQuerySelector } from '../utils/dom';
 import { validateData, isValidUrl } from '../utils/security';
 
+// Embed a base64 cookie icon to avoid external image loading issues
+const COOKIE_ICON_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAAsTAAALEwEAmpwYAAABQElEQVR4nO3UMUvDUBQF4ENpB8HJTReho4ODm4OLk1MR/Q2Ci4vgIji7OfoTHFwcHRwc9Qc4OjiITg7Fxa5KkahJFfNarI29ITHmJRUXvXA5j/ty7uUlvJvJGKxUOdDTI9lSaSdq3vf/Dlgql/3BXO5zwfMurVaWLdWtBmQhUNbtPR0Lr1RqLXjeRe73HwC0Wq2Mx+23wW7I2yEfhTwc8jgoxNMrpFVAG6kVA1CBQjQ+sDXgWXLh+DuQ9XtxgQYUJedZDSDiOAT4yexM8FtSXQWawVl2XwHr6kJVv0LgPW6SjQ6sJ0/bCEDhyaYYD/gXVXQFbM7MLNr+gx1VXZiamvSB3cz3+lhvW08K0Ov1hrLZ7PvExPi11vo0arbb7UG8PsC5UurILZRKpQbjnNVqNYfPBxpEVo7jnItI3MUxZAPRF5+aLpMjqQClAAAAAElFTkSuQmCC";
+
 const BUTTON_CONFIG = Object.freeze({
-  IMAGE_URL: 'https://cdn.prod.website-files.com/66b910f38e21190c26a4f750/67a9e96a9693f6e9f54a8d81_cookie.png',
   BUTTON_ID: 'cookie-preferences-button',
   WRAPPER_CLASS: 'cookie-preferences-button-wrapper'
 });
@@ -42,11 +44,6 @@ export default class PreferencesButton {
   }
 
   createButtonElement() {
-    if (!isValidUrl(BUTTON_CONFIG.IMAGE_URL)) {
-      console.error('Invalid image URL');
-      return null;
-    }
-
     const button = document.createElement('button');
     button.id = BUTTON_CONFIG.BUTTON_ID;
     button.className = 'fixed bottom-4 left-4 p-3 bg-white rounded-full shadow-lg cursor-pointer hover:bg-gray-100 z-[9998]';
@@ -54,7 +51,8 @@ export default class PreferencesButton {
     button.setAttribute('type', 'button');
 
     const img = document.createElement('img');
-    img.src = BUTTON_CONFIG.IMAGE_URL;
+    // Use embedded base64 image instead of external URL
+    img.src = COOKIE_ICON_BASE64;
     img.alt = 'Cookie Preferences';
     img.width = 24;
     img.height = 24;
