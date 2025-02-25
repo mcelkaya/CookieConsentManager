@@ -58,65 +58,123 @@ export default class Modal {
   handleDeny() {
     console.log("Modal: handleDeny called");
     try {
+      console.log("Executing denial handler");
       if (typeof this.onDeny === 'function') {
         this.onDeny();
       }
     } catch (error) {
       console.error("Error in onDeny callback:", error);
     }
+    console.log("Hiding modal after deny");
     this.forceHide();
   }
   
   handleSave() {
     console.log("Modal: handleSave called");
     try {
+      console.log("Executing save handler");
       if (typeof this.onSave === 'function') {
         this.onSave();
       }
     } catch (error) {
       console.error("Error in onSave callback:", error);
     }
+    console.log("Hiding modal after save");
     this.forceHide();
   }
   
   handleAccept() {
     console.log("Modal: handleAccept called");
     try {
+      console.log("Executing accept handler");
       if (typeof this.onAccept === 'function') {
         this.onAccept();
       }
     } catch (error) {
       console.error("Error in onAccept callback:", error);
     }
+    console.log("Hiding modal after accept");
     this.forceHide();
   }
   
   render() {
+    // Create a completely new structure for the modal
+    const modalContainer = document.createElement('div');
+    modalContainer.className = 'cookie-modal-container';
+    modalContainer.style.display = 'flex';
+    modalContainer.style.flexDirection = 'column';
+    modalContainer.style.maxHeight = '80vh';
+    modalContainer.style.width = '100%';
+    modalContainer.style.maxWidth = '42rem';
+    modalContainer.style.backgroundColor = 'white';
+    modalContainer.style.borderRadius = '8px';
+    modalContainer.style.overflow = 'hidden';
+    
+    // 1. Header with tabs (fixed at top)
+    const headerContainer = document.createElement('div');
+    headerContainer.className = 'cookie-modal-header';
+    headerContainer.style.position = 'sticky';
+    headerContainer.style.top = '0';
+    headerContainer.style.backgroundColor = 'white';
+    headerContainer.style.zIndex = '5';
+    headerContainer.style.borderBottom = '1px solid #e5e7eb';
+    
     const tabsElement = this.tabs.render();
+    headerContainer.appendChild(tabsElement);
+    modalContainer.appendChild(headerContainer);
+    
+    // 2. Scrollable content area
+    const scrollContainer = document.createElement('div');
+    scrollContainer.className = 'cookie-modal-content';
+    scrollContainer.style.flexGrow = '1';
+    scrollContainer.style.overflowY = 'auto';
+    scrollContainer.style.padding = '1rem';
+    scrollContainer.style.paddingBottom = '2rem'; // Extra padding at bottom to prevent overlap
+    
+    // Get the content based on active tab
+    const tabContents = {};
+    const tabElements = tabsElement.querySelectorAll('.tab-content');
+    tabElements.forEach(element => {
+      const tabId = element.id.replace('-tab', '');
+      tabContents[tabId] = element;
+    });
+    
+    // Remove tab contents from tabs element and add to scroll container
+    Object.values(tabContents).forEach(content => {
+      if (content.parentNode) {
+        content.parentNode.removeChild(content);
+      }
+      scrollContainer.appendChild(content);
+    });
+    
+    modalContainer.appendChild(scrollContainer);
+    
+    // 3. Footer with buttons (fixed at bottom)
+    const footerContainer = document.createElement('div');
+    footerContainer.className = 'cookie-modal-footer';
+    footerContainer.style.position = 'sticky';
+    footerContainer.style.bottom = '0';
+    footerContainer.style.backgroundColor = 'white';
+    footerContainer.style.zIndex = '5';
+    footerContainer.style.borderTop = '1px solid #e5e7eb';
+    
     const actionsElement = this.actions.render();
+    footerContainer.appendChild(actionsElement);
+    modalContainer.appendChild(footerContainer);
     
-    const innerContainer = document.createElement('div');
-    innerContainer.className = 'modal-inner';
-    innerContainer.appendChild(tabsElement);
-    innerContainer.appendChild(actionsElement);
+    // Create the final modal
+    this.modalElement = this.overlay.render(modalContainer);
     
-    const contentElement = this.content.render(innerContainer);
-    this.modalElement = this.overlay.render(contentElement);
-    
-    // Debug click logging on the modal element
-    if (window.DEBUG) {
-      this.modalElement.addEventListener('click', (e) => {
-        console.log('Modal: Click event', {
-          target: e.target,
-          targetType: e.target.tagName,
-          callbacks: {
-            onDeny: typeof this.onDeny === 'function',
-            onSave: typeof this.onSave === 'function',
-            onAccept: typeof this.onAccept === 'function'
-          }
-        });
-      }, true);
-    }
+    // Debug logging for clicks
+    this.modalElement.addEventListener('click', (e) => {
+      console.log('Modal click event:', {
+        tagName: e.target.tagName,
+        className: e.target.className,
+        id: e.target.id,
+        dataAction: e.target.getAttribute('data-action'),
+        path: e.composedPath().map(el => el.tagName || el.id || 'unknown').join(' > ')
+      });
+    }, true);
     
     return this.modalElement;
   }
@@ -168,9 +226,18 @@ export default class Modal {
       const saveButton = this.modalElement.querySelector('[data-action="save"]');
       const acceptButton = this.modalElement.querySelector('[data-action="accept"]');
       
-      // Add direct handlers
+      console.log("Button elements found:", {
+        denyButton: !!denyButton,
+        saveButton: !!saveButton,
+        acceptButton: !!acceptButton
+      });
+      
+      // Remove existing event listeners by cloning and replacing
       if (denyButton) {
-        denyButton.onclick = (e) => {
+        const newDenyButton = denyButton.cloneNode(true);
+        denyButton.parentNode.replaceChild(newDenyButton, denyButton);
+        newDenyButton.onclick = (e) => {
+          console.log("Deny button clicked directly");
           e.preventDefault();
           e.stopPropagation();
           this.handleDeny();
@@ -179,7 +246,10 @@ export default class Modal {
       }
       
       if (saveButton) {
-        saveButton.onclick = (e) => {
+        const newSaveButton = saveButton.cloneNode(true);
+        saveButton.parentNode.replaceChild(newSaveButton, saveButton);
+        newSaveButton.onclick = (e) => {
+          console.log("Save button clicked directly");
           e.preventDefault();
           e.stopPropagation();
           this.handleSave();
@@ -188,7 +258,10 @@ export default class Modal {
       }
       
       if (acceptButton) {
-        acceptButton.onclick = (e) => {
+        const newAcceptButton = acceptButton.cloneNode(true);
+        acceptButton.parentNode.replaceChild(newAcceptButton, acceptButton);
+        newAcceptButton.onclick = (e) => {
+          console.log("Accept button clicked directly");
           e.preventDefault();
           e.stopPropagation();
           this.handleAccept();
@@ -203,6 +276,19 @@ export default class Modal {
   switchToTab(tabId) {
     if (this.tabs && typeof this.tabs.switchTab === 'function') {
       this.tabs.switchTab(tabId);
+      
+      // Also update the scrollable content to show the correct tab
+      if (this.modalElement) {
+        const tabContents = this.modalElement.querySelectorAll('.tab-content');
+        tabContents.forEach(content => {
+          const contentId = content.id.replace('-tab', '');
+          if (contentId === tabId) {
+            content.classList.remove('hidden');
+          } else {
+            content.classList.add('hidden');
+          }
+        });
+      }
     }
   }
 }
